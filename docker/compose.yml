@@ -4,8 +4,6 @@ services:
 
     image: apache/kafka:4.1.0
 
-    container_name: kafka
-
     hostname: ${KAFKA_HOSTNAME}
 
     ports:
@@ -13,10 +11,15 @@ services:
 
     environment:
 
+      #
+      # Cluster Identity
+      #
       KAFKA_NODE_ID: ${KAFKA_NODE_ID}
-
       KAFKA_PROCESS_ROLES: broker,controller
 
+      #
+      # Networking
+      #
       KAFKA_LISTENERS: PLAINTEXT://:${KAFKA_INTERNAL_PORT},EXTERNAL://:${KAFKA_EXTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT}
 
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_HOSTNAME}:${KAFKA_INTERNAL_PORT},EXTERNAL://localhost:${KAFKA_EXTERNAL_PORT}
@@ -25,10 +28,16 @@ services:
 
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
+      #
+      # KRaft Controller
+      #
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
 
       KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_NODE_ID}@${KAFKA_HOSTNAME}:${KAFKA_CONTROLLER_PORT}
 
+      #
+      # Internal Topics
+      #
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -40,5 +49,17 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
 
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list > /dev/null 2>&1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
 volumes:
   kafka-data:
+
